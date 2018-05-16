@@ -1,7 +1,9 @@
 package reposense.system;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Date;
 
 import reposense.util.Constants;
@@ -10,6 +12,7 @@ import reposense.util.Constants;
 public class CommandRunner {
 
     private static boolean isWindows = isWindows();
+    private static byte[] buffer = new byte[1 << 13];
 
     public static String gitLog(String root, Date fromDate, Date toDate) {
         File rootFile = new File(root);
@@ -63,31 +66,23 @@ public class CommandRunner {
                     .command(new String[]{"bash", "-c", command})
                     .directory(directory);
         }
-        Process p = null;
-        try {
-            p = pb.start();
-        } catch (IOException e) {
-            throw new RuntimeException("Error Creating Thread:" + e.getMessage());
-        }
-        StreamGobbler errorGobbler = new StreamGobbler(p.getErrorStream());
-        StreamGobbler outputGobbler = new StreamGobbler(p.getInputStream());
-        outputGobbler.start();
-        errorGobbler.start();
+        Process p;
         int exit = 0;
         try {
+            p = pb.start();
             exit = p.waitFor();
-            outputGobbler.join();
-            errorGobbler.join();
-        } catch (InterruptedException e) {
-            throw new RuntimeException("Error Handling Thread.");
+        } catch (IOException ioe) {
+            throw new RuntimeException("Error Creating Process:" + ioe.getMessage());
+        } catch (InterruptedException ie) {
+            throw new RuntimeException("Error Handling Process.");
         }
 
         if (exit == 0) {
-            return outputGobbler.getValue();
+            return convertToString(p.getInputStream());
         } else {
             String errorMessage = "Error returned from command ";
             errorMessage += command + "on path ";
-            errorMessage += directory.getPath() + " :\n" + errorGobbler.getValue();
+            errorMessage += directory.getPath() + " :\n" + convertToString(p.getErrorStream());
             throw new RuntimeException(errorMessage);
         }
     }
@@ -101,5 +96,19 @@ public class CommandRunner {
         return (System.getProperty("os.name").toLowerCase().indexOf("win") >= 0);
     }
 
-
+    /**
+     * Converts the {@code is} into a {@code String} and returns it.
+     */
+    private static String convertToString(InputStream is) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try {
+            int len;
+            while ((len = is.read(buffer)) != -1) {
+                baos.write(buffer, 0, len);
+            }
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        }
+        return baos.toString();
+    }
 }
