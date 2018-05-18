@@ -67,9 +67,13 @@ public class CommandRunner {
                     .directory(directory);
         }
         Process p;
+        String output;
+        String errorOutput;
         int exit = 0;
         try {
             p = pb.start();
+            output = convertToString(p.getInputStream());
+            errorOutput = convertToString(p.getErrorStream());
             exit = p.waitFor();
         } catch (IOException ioe) {
             throw new RuntimeException("Error Creating Process:" + ioe.getMessage());
@@ -78,11 +82,11 @@ public class CommandRunner {
         }
 
         if (exit == 0) {
-            return convertToString(p.getInputStream());
+            return output;
         } else {
             String errorMessage = "Error returned from command ";
             errorMessage += command + "on path ";
-            errorMessage += directory.getPath() + " :\n" + convertToString(p.getErrorStream());
+            errorMessage += directory.getPath() + " :\n" + errorOutput;
             throw new RuntimeException(errorMessage);
         }
     }
