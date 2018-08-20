@@ -62,38 +62,38 @@ public class GitLogCommand extends SystemCommand {
         }
 
         if (authorToFilter != null) {
-            command += convertToFilterAuthorArgs(authorToFilter);
+            command += getFilterAuthorArgs();
         }
 
         if (formats != null) {
-            command += convertToGitIncludeFormatsArgs(formats);
+            command += getGitIncludeFormatsArgs();
         }
 
         if (ignoreGlobList != null) {
-            command += convertToGitExcludeGlobArgs(ignoreGlobList);
+            command += getGitExcludeGlobArgs();
         }
     }
 
     /**
      * Returns the {@code String} command to specify the authors to analyze for `git log` command.
      */
-    private String convertToFilterAuthorArgs(Author author) {
+    private String getFilterAuthorArgs() {
         StringBuilder filterAuthorArgsBuilder = new StringBuilder(" --author=\"");
 
         // git author names may contain regex meta-characters, so we need to escape those
-        author.getAuthorAliases().stream()
+        authorToFilter.getAuthorAliases().stream()
                 .map(authorAlias -> String.format(
                         AUTHOR_NAME_PATTERN, escapeSpecialRegexChars(authorAlias)) + OR_OPERATOR_PATTERN)
                 .forEach(filterAuthorArgsBuilder::append);
 
-        filterAuthorArgsBuilder.append(String.format(AUTHOR_NAME_PATTERN, author.getGitId())).append("\"");
+        filterAuthorArgsBuilder.append(String.format(AUTHOR_NAME_PATTERN, authorToFilter.getGitId())).append("\"");
         return filterAuthorArgsBuilder.toString();
     }
 
     /**
      * Returns the {@code String} command to specify the file formats to analyze for `git` commands.
      */
-    private String convertToGitIncludeFormatsArgs(List<String> formats) {
+    private String getGitIncludeFormatsArgs() {
         StringBuilder gitFormatsArgsBuilder = new StringBuilder();
         final String cmdFormat = " -- " + addQuote("*.%s");
         formats.stream()
@@ -106,7 +106,7 @@ public class GitLogCommand extends SystemCommand {
     /**
      * Returns the {@code String} command to specify the globs to exclude for `git log` command.
      */
-    private String convertToGitExcludeGlobArgs(List<String> ignoreGlobList) {
+    private String getGitExcludeGlobArgs() {
         StringBuilder gitExcludeGlobArgsBuilder = new StringBuilder();
         final String cmdFormat = " " + addQuote(":(exclude)%s");
         ignoreGlobList.stream()
