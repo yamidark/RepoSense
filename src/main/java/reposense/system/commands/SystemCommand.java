@@ -8,6 +8,7 @@ import reposense.system.StreamGobbler;
 
 public abstract class SystemCommand {
     private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase().contains("win");
+    private static final String COMMAND_ERROR_MESSEAGE_FORMAT = "Error returned from command %s on path %s:\n%s";
 
     protected final Path path;
 
@@ -21,42 +22,44 @@ public abstract class SystemCommand {
 
     public String execute() {
         buildCommand();
-        ProcessBuilder pb = null;
+
+        ProcessBuilder pb;
         if (IS_WINDOWS) {
             pb = new ProcessBuilder()
-                    .command(new String[]{"CMD", "/c", command})
+                    .command("CMD", "/c", command)
                     .directory(path.toFile());
         } else {
             pb = new ProcessBuilder()
-                    .command(new String[]{"bash", "-c", command})
+                    .command("bash", "-c", command)
                     .directory(path.toFile());
         }
-        Process p = null;
+
+        Process p;
         try {
             p = pb.start();
         } catch (IOException e) {
             throw new RuntimeException("Error Creating Thread:" + e.getMessage());
         }
+
         StreamGobbler errorGobbler = new StreamGobbler(p.getErrorStream());
         StreamGobbler outputGobbler = new StreamGobbler(p.getInputStream());
         outputGobbler.start();
         errorGobbler.start();
-        int exit = 0;
+
+        int exit;
         try {
             exit = p.waitFor();
             outputGobbler.join();
             errorGobbler.join();
         } catch (InterruptedException e) {
-            throw new RuntimeException("Error Handling Thread.");
+            throw new SystemCommandException("Error reading output from process.");
         }
 
         if (exit == 0) {
             return outputGobbler.getValue();
         } else {
-            String errorMessage = "Error returned from command ";
-            errorMessage += command + "on path ";
-            errorMessage += path.toString() + " :\n" + errorGobbler.getValue();
-            throw new RuntimeException(errorMessage);
+            throw new SystemCommandException(
+                    String.format(COMMAND_ERROR_MESSEAGE_FORMAT, command, path.toString(), errorGobbler.getValue()));
         }
     }
 }
