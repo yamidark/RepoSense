@@ -13,6 +13,9 @@ public class GitLogCommand extends SystemCommand {
 
     // ignore check against email
     private static final String AUTHOR_NAME_PATTERN = "^%s <.*>$";
+    private static final String DEFAULT_OUTPUT_FORMAT = "--pretty=format:\"%H|%aN|%ad|%s\" --date=iso --shortstat";
+
+    private boolean ignoreMerges = true;
 
     private List<String> ignoreGlobList;
     private List<String> formats;
@@ -51,7 +54,11 @@ public class GitLogCommand extends SystemCommand {
 
     @Override
     protected void buildCommand() {
-        command = GIT_LOG_COMMAND_WORD + " --no-merges --pretty=format:\"%H|%aN|%ad|%s\" --date=iso --shortstat";
+        command = GIT_LOG_COMMAND_WORD + " " + DEFAULT_OUTPUT_FORMAT;
+
+        if (ignoreMerges) {
+            command += " --no merges";
+        }
 
         if (sinceDate != null) {
             command += " --since=" + addQuote(GIT_SINCE_DATE_FORMAT.format(sinceDate));
