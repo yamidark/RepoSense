@@ -29,6 +29,9 @@ public abstract class SystemCommand {
 
     protected abstract void buildCommand();
 
+    /**
+     * Creates a process to execute the command stored and returns the output of the process.
+     */
     public String execute() {
         buildCommand();
 
@@ -47,7 +50,7 @@ public abstract class SystemCommand {
         try {
             p = pb.start();
         } catch (IOException e) {
-            throw new RuntimeException("Error Creating Thread:" + e.getMessage());
+            throw new SystemCommandException("Error Creating Thread:" + e.getMessage());
         }
 
         StreamGobbler errorGobbler = new StreamGobbler(p.getErrorStream());

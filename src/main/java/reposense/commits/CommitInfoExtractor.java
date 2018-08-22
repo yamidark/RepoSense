@@ -9,8 +9,8 @@ import reposense.commits.model.CommitInfo;
 import reposense.git.GitChecker;
 import reposense.model.Author;
 import reposense.model.RepoConfiguration;
-import reposense.system.CommandRunner;
 import reposense.system.LogsManager;
+import reposense.system.commands.GitLogCommand;
 
 /**
  * Extracts commit information of a repository.
@@ -29,8 +29,8 @@ public class CommitInfoExtractor {
         List<CommitInfo> repoCommitInfos = new ArrayList<>();
 
         for (Author author : config.getAuthorList()) {
-            String gitLogResult = CommandRunner.gitLog(config, author);
-            List<CommitInfo> authorCommitInfos = parseGitLogResults(gitLogResult);
+            String authorGitLogResult = getAuthorGitLogResults(config, author);
+            List<CommitInfo> authorCommitInfos = parseGitLogResults(authorGitLogResult);
             repoCommitInfos.addAll(authorCommitInfos);
         }
 
@@ -56,5 +56,19 @@ public class CommitInfoExtractor {
 
         Collections.reverse(commitInfos);
         return commitInfos;
+    }
+
+    /**
+     * Returns the {@code author} git log result in the default output format, based on the configurations in
+     * {@code config} and itself.
+     */
+    private static String getAuthorGitLogResults(RepoConfiguration config, Author author) {
+        return new GitLogCommand(config.getRepoRoot())
+                .setSinceDate(config.getSinceDate())
+                .setUntilDate(config.getUntilDate())
+                .setFormats(config.getFormats())
+                .setAuthorFilter(author)
+                .setIgnoreGlobList(author.getIgnoreGlobList())
+                .execute();
     }
 }

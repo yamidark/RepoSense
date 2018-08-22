@@ -57,7 +57,7 @@ public class GitLogCommand extends SystemCommand {
         command = GIT_LOG_COMMAND_WORD + " " + DEFAULT_OUTPUT_FORMAT;
 
         if (ignoreMerges) {
-            command += " --no merges";
+            command += " --no-merges";
         }
 
         if (sinceDate != null) {
